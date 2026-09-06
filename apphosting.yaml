@@ -3,6 +3,9 @@ runConfig:
   maxInstances: 2
 
 env:
+  - variable: FIREBASE_PROJECT_ID
+    value: instapaper-opds
+    availability: [RUNTIME]
   - variable: INSTAPAPER_CONSUMER_KEY
     secret: instapaper-consumer-key
   - variable: INSTAPAPER_CONSUMER_SECRET
