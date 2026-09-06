@@ -74,16 +74,6 @@ function esc(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function titleFromHtml(html: string): string | undefined {
-  const titleMatch = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html);
-  if (titleMatch?.[1]?.trim()) return titleMatch[1].trim();
-  const h1Match = /<h1[^>]*>([\s\S]*?)<\/h1>/i.exec(html);
-  if (h1Match?.[1]?.trim()) {
-    return h1Match[1].replace(/<[^>]+>/g, "").trim();
-  }
-  return undefined;
-}
-
 function domainAuthor(url?: string): string | undefined {
   if (!url) return undefined;
   try {
@@ -93,14 +83,13 @@ function domainAuthor(url?: string): string | undefined {
   }
 }
 
+const BROWSER_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+
 async function fetchOriginalArticle(url: string): Promise<string | null> {
   try {
     const res = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; instapaper-opds/0.1; +https://github.com/hatboysam/instapaper-opds)",
-        Accept: "text/html",
-      },
+      headers: { "User-Agent": BROWSER_UA, Accept: "text/html" },
       redirect: "follow",
       signal: AbortSignal.timeout(15000),
     });
@@ -112,20 +101,15 @@ async function fetchOriginalArticle(url: string): Promise<string | null> {
   }
 }
 
-async function getArticleHtml(
-  token: { key: string; secret: string },
-  bookmarkId: number,
-  url?: string,
-): Promise<string> {
-  try {
-    return await getBookmarkText(token, bookmarkId);
-  } catch (err) {
-    if (url) {
-      const fetched = await fetchOriginalArticle(url);
-      if (fetched) return fetched;
-    }
-    throw err;
-  }
+function tryExtract(
+  html: string,
+  baseUrl?: string,
+): { fragment: string; title?: string; byline?: string } | null {
+  const extracted = extractArticle(html, baseUrl ?? "");
+  if (!extracted?.content) return null;
+  const fragment = toXhtmlFragment(extracted.content, baseUrl ?? "");
+  if (!fragment) return null;
+  return { fragment, title: extracted.title, byline: extracted.byline };
 }
 
 export async function buildBookEpub(
@@ -137,31 +121,48 @@ export async function buildBookEpub(
   let title = opts.title;
   let fragment = "";
   let byline: string | undefined;
+  let failureReason: string | null = null;
+
+  const useExtracted = (
+    result: { fragment: string; title?: string; byline?: string } | null,
+  ): boolean => {
+    if (!result) return false;
+    fragment = result.fragment;
+    title = title || result.title;
+    byline = result.byline;
+    return true;
+  };
 
   try {
-    const html = await getArticleHtml(token, bookmarkId, opts.url);
-    const extracted = extractArticle(html, opts.url ?? "");
-    if (extracted?.content) {
-      fragment = toXhtmlFragment(extracted.content, opts.url ?? "");
+    const html = await getBookmarkText(token, bookmarkId);
+    if (!useExtracted(tryExtract(html, opts.url)) && opts.url) {
+      const fetched = await fetchOriginalArticle(opts.url);
+      if (fetched) useExtracted(tryExtract(fetched, opts.url));
     }
-    title = title || extracted?.title || titleFromHtml(html) || `Article ${bookmarkId}`;
-    byline = extracted?.byline;
   } catch (err) {
     if (!(err instanceof InstapaperError)) throw err;
-    const reason = esc(err.message);
+    failureReason = err.message;
+    if (opts.url) {
+      const fetched = await fetchOriginalArticle(opts.url);
+      if (fetched && useExtracted(tryExtract(fetched, opts.url))) {
+        failureReason = null;
+      }
+    }
+  }
+
+  const date =
+    opts.timestamp && opts.timestamp > 0 ? new Date(opts.timestamp * 1000) : new Date();
+
+  if (!fragment) {
+    const reason = failureReason ? ` (${esc(failureReason)})` : "";
     const link = opts.url
       ? `<p>Original article: <a href="${esc(opts.url)}">${esc(opts.url)}</a></p>`
       : "";
-    fragment = `<p>The full text of this article could not be retrieved (${reason}).</p>${link}`;
-    title = title ?? (slugFromPath.replace(/-\d+$/, "") || `Article ${bookmarkId}`);
+    fragment = `<p>The full text of this article could not be retrieved${reason}.</p>${link}`;
   }
+  title = title ?? (slugFromPath.replace(/-\d+$/, "") || `Article ${bookmarkId}`);
 
   const author = byline || domainAuthor(opts.url);
-  const date =
-    opts.timestamp && opts.timestamp > 0 ? new Date(opts.timestamp * 1000) : new Date();
-  if (!fragment) {
-    fragment = `<p>This article has no extractable text.</p>`;
-  }
   const bytes = await buildEpub({
     id: `urn:instapaper:bookmark:${bookmarkId}`,
     title,
