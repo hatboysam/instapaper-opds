@@ -6,7 +6,7 @@ Serves an Instapaper account as an **OPDS catalog**: your Xteink X4 (CrossPoint 
 
 1. **Create an account** at `/signup` — pick any username + password, enter the invite code, and your Instapaper email/password (used once to obtain an API token; not stored).
 2. **On the X4:** `Settings → System → OPDS Servers → Add Server`
-   - URL: `https://instapaper-opds--instapaper-opds.us-central1.hosted.app/opds`
+   - URL: `https://instaopds.com/opds` (or `https://instapaper-opds--instapaper-opds.us-central1.hosted.app/opds`)
    - Username / password: the account from step 1
 3. **Open the catalog** from the device home screen. Articles are newest-first; download any and it appears in the book picker.
 
