@@ -10,8 +10,7 @@ export interface InstapaperBookmark {
   description?: string;
   hash?: string;
   progress?: number;
-  starred?: 0 | 1;
-  type?: string;
+  starred?: string | number;
   time?: number;
   progress_timestamp?: number;
 }
@@ -19,7 +18,6 @@ export interface InstapaperBookmark {
 export interface BookmarksListResponse {
   user?: { user_id: number; username: string };
   bookmarks: InstapaperBookmark[];
-  highlights?: unknown[];
   delete_ids?: string[];
 }
 
@@ -123,6 +121,31 @@ export interface ListOptions {
   have?: string[];
 }
 
+function parseListResponse(json: unknown): BookmarksListResponse {
+  if (Array.isArray(json)) {
+    const bookmarks: InstapaperBookmark[] = [];
+    const deleteIds: string[] = [];
+    let user: BookmarksListResponse["user"];
+    for (const el of json) {
+      if (!el || typeof el !== "object") continue;
+      const e = el as Record<string, unknown>;
+      switch (e.type) {
+        case "bookmark":
+          bookmarks.push(e as unknown as InstapaperBookmark);
+          break;
+        case "user":
+          user = { user_id: Number(e.user_id), username: String(e.username) };
+          break;
+        case "deleted":
+          deleteIds.push(String(e.bookmark_id));
+          break;
+      }
+    }
+    return { user, bookmarks, delete_ids: deleteIds };
+  }
+  return json as BookmarksListResponse;
+}
+
 export async function listBookmarks(
   token: { key: string; secret: string },
   opts: ListOptions = {},
@@ -133,7 +156,7 @@ export async function listBookmarks(
   if (opts.have?.length) data.have = opts.have.join(",");
   const res = await post("/bookmarks/list", data, token);
   if (!res.ok) throw await parseError(res);
-  return (await res.json()) as BookmarksListResponse;
+  return parseListResponse(await res.json());
 }
 
 export async function getBookmarkText(

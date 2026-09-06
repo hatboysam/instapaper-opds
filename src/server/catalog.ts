@@ -98,7 +98,7 @@ async function fetchOriginalArticle(url: string): Promise<string | null> {
     const res = await fetch(url, {
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; instapaper-xteink/0.1; +https://github.com/samstern)",
+          "Mozilla/5.0 (compatible; instapaper-opds/0.1; +https://github.com/hatboysam/instapaper-opds)",
         Accept: "text/html",
       },
       redirect: "follow",

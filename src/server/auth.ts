@@ -36,7 +36,7 @@ export function unauthorized(): NextResponse {
   return new NextResponse("Unauthorized", {
     status: 401,
     headers: {
-      "WWW-Authenticate": 'Basic realm="instapaper-xteink", charset="UTF-8"',
+      "WWW-Authenticate": 'Basic realm="instapaper-opds", charset="UTF-8"',
     },
   });
 }

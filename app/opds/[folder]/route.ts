@@ -3,6 +3,8 @@ import { acquisitionFeed, OpdsAcqEntry } from "@/core/opds";
 import { slugify } from "@/core/slug";
 import { handleRouteError, requireUser, unauthorized } from "@/server/auth";
 import { fetchFolderPage, isFolder } from "@/server/catalog";
+import { InstapaperError } from "@/server/instapaper";
+import { requestOrigin, requestUrl } from "@/server/request-origin";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +25,7 @@ export async function GET(
       100,
       Math.max(10, Number.parseInt(params.get("size") ?? "50", 10) || 50),
     );
-    const origin = req.nextUrl.origin;
+    const origin = requestOrigin(req);
     const { entries, hasMore } = await fetchFolderPage(
       { key: user.token, secret: user.tokenSecret },
       folder,
@@ -48,9 +50,9 @@ export async function GET(
       };
     });
     const xml = acquisitionFeed({
-      id: `urn:instapaper-xteink:${folder}:page:${page}`,
+      id: `urn:instapaper-opds:${folder}:page:${page}`,
       title: `Instapaper - ${folder[0].toUpperCase()}${folder.slice(1)} (page ${page})`,
-      selfUrl: req.nextUrl.toString(),
+      selfUrl: requestUrl(req),
       entries: acqEntries,
       nextUrl,
     });
@@ -62,6 +64,9 @@ export async function GET(
       },
     });
   } catch (err) {
+    if (err instanceof InstapaperError) {
+      return NextResponse.json({ error: err.message }, { status: 502 });
+    }
     return handleRouteError(err);
   }
 }

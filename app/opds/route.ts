@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { navigationFeed } from "@/core/opds";
 import { handleRouteError, requireUser, unauthorized } from "@/server/auth";
+import { requestOrigin } from "@/server/request-origin";
 
 export const dynamic = "force-dynamic";
 
@@ -8,10 +9,10 @@ export async function GET(req: NextRequest) {
   try {
     const user = await requireUser(req);
     if (!user) return unauthorized();
-    const origin = new URL(req.url).origin;
+    const origin = requestOrigin(req);
     const now = new Date();
     const xml = navigationFeed({
-      id: "urn:instapaper-xteink:root",
+      id: "urn:instapaper-opds:root",
       title: "Instapaper",
       selfUrl: `${origin}/opds`,
       entries: [
