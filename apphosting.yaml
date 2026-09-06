@@ -1,0 +1,13 @@
+runConfig:
+  minInstances: 0
+  maxInstances: 2
+
+env:
+  - variable: INSTAPAPER_CONSUMER_KEY
+    secret: instapaper-consumer-key
+  - variable: INSTAPAPER_CONSUMER_SECRET
+    secret: instapaper-consumer-secret
+  - variable: TOKEN_ENCRYPTION_KEY
+    secret: token-encryption-key
+  - variable: SIGNUP_CODE
+    secret: signup-code

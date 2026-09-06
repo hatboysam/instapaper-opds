@@ -1,0 +1,36 @@
+{
+  "name": "instapaper-opds",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "smoke": "tsx scripts/smoke.ts",
+    "login": "tsx --env-file=.env.local scripts/login.ts"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "epub-gen-memory": "^1.1.2",
+    "firebase-admin": "^13.1.0",
+    "linkedom": "^0.18.13",
+    "next": "^15.4.0",
+    "oauth-1.0a": "^2.2.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "slugify": "^1.6.6"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "firebase-tools": "^15.29.0",
+    "jszip": "^3.10.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3"
+  }
+}

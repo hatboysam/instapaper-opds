@@ -1,0 +1,9 @@
+{
+  "apphosting": [
+    {
+      "backendId": "instapaper-opds",
+      "rootDir": "./",
+      "ignore": ["node_modules", ".git", ".firebase"]
+    }
+  ]
+}

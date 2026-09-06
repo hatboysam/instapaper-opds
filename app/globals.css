@@ -1,0 +1,58 @@
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  margin: 0;
+  padding: 2rem 1rem;
+  background: #fafafa;
+  color: #1a1a1a;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #171717;
+    color: #eee;
+  }
+}
+
+main {
+  max-width: 42rem;
+  margin: 0 auto;
+  line-height: 1.55;
+}
+
+code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.9em;
+  background: rgba(127, 127, 127, 0.15);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  word-break: break-all;
+}
+
+input {
+  font: inherit;
+  padding: 0.5rem;
+  border: 1px solid rgba(127, 127, 127, 0.4);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+button {
+  font: inherit;
+  padding: 0.55rem 1.2rem;
+  border-radius: 6px;
+  border: none;
+  background: #1a56db;
+  color: white;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+}
