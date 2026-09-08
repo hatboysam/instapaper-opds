@@ -59,16 +59,11 @@ export async function requireUser(req: NextRequest): Promise<BasicUser | null> {
   if (hit && hit.expires > Date.now()) return hit.user;
 
   let user: BasicUser | null = null;
-  try {
-    const record = await getUser(username);
-    if (record && verifyPassword(password, record.passwordHash)) {
-      user = toBasicUser(record);
-    } else {
-      crypto.scryptSync(password, DUMMY_SALT, 64);
-    }
-  } catch (err) {
-    if (err instanceof ConfigError) throw err;
-    throw err;
+  const record = await getUser(username);
+  if (record && verifyPassword(password, record.passwordHash)) {
+    user = toBasicUser(record);
+  } else {
+    crypto.scryptSync(password, DUMMY_SALT, 64);
   }
 
   if (user) {

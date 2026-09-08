@@ -9,7 +9,7 @@ const FIXTURE = `
 <html><head><title>Sample</title></head><body>
 <article>
 <script>alert('x')</script>
-<h1>Real Heading</h1>
+<h1 style="color:red" onclick="alert('x')">Real Heading</h1>
 <div>
   <p>First paragraph with <a href="/relative">a relative link</a> and <b>bold</b> and <i>italic</i>.</p>
   <blockquote>Someone said this.</blockquote>
@@ -35,6 +35,9 @@ async function main() {
   }
   if (/<p>\s*<\/p>/.test(fragment)) {
     throw new Error("empty paragraph survived cleaning");
+  }
+  if (fragment.includes('style=') || fragment.includes('onclick')) {
+    throw new Error("dangerous attributes survived cleaning");
   }
   if (!fragment.includes('href="https://example.com/relative"')) {
     throw new Error("relative link not resolved");

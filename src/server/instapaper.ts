@@ -23,12 +23,10 @@ export interface BookmarksListResponse {
 
 export class InstapaperError extends Error {
   code?: number;
-  status?: number;
-  constructor(message: string, code?: number, status?: number) {
+  constructor(message: string, code?: number) {
     super(message);
     this.name = "InstapaperError";
     this.code = code;
-    this.status = status;
   }
 }
 
@@ -89,7 +87,7 @@ async function parseError(res: Response): Promise<InstapaperError> {
   } catch {
     /* ignore */
   }
-  return new InstapaperError(message, code, res.status);
+  return new InstapaperError(message, code);
 }
 
 export async function exchangeXAuthToken(

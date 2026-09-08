@@ -1,42 +1,45 @@
 import { Agent, buildConnector, fetch as undiciFetch } from "undici";
 import { lookup } from "node:dns/promises";
-import net from "node:net";
+import ipaddr from "ipaddr.js";
 
 const MAX_BYTES = 3 * 1024 * 1024;
 const MAX_REDIRECTS = 3;
 const TIMEOUT_MS = 15000;
 
-export class BlockedHostError extends Error {
-  constructor() {
-    super("Blocked host");
-    this.name = "BlockedHostError";
-  }
-}
+const BLOCKED_V4: [string, number][] = [
+  ["0.0.0.0", 8],
+  ["10.0.0.0", 8],
+  ["127.0.0.0", 8],
+  ["169.254.0.0", 16],
+  ["172.16.0.0", 12],
+  ["192.168.0.0", 16],
+  ["100.64.0.0", 10],
+  ["192.0.0.0", 24],
+  ["192.0.2.0", 24],
+  ["198.18.0.0", 15],
+  ["224.0.0.0", 4],
+  ["240.0.0.0", 4],
+];
 
-function isPublicIpv4(ip: string): boolean {
-  const parts = ip.split(".").map(Number);
-  const [a, b] = parts;
-  if (a === 0 || a === 10 || a === 127) return false;
-  if (a === 169 && b === 254) return false;
-  if (a === 172 && b >= 16 && b <= 31) return false;
-  if (a === 192 && b === 168) return false;
-  if (a === 100 && b >= 64 && b <= 127) return false;
-  if (a === 192 && (b === 0 || b === 2)) return false;
-  if (a === 198 && (b === 18 || b === 19)) return false;
-  if (a >= 224) return false;
-  return true;
-}
+const BLOCKED_V6: [string, number][] = [
+  ["::1", 128],
+  ["fc00::", 7],
+  ["fe80::", 10],
+  ["ff00::", 8],
+  ["2001:db8::", 32],
+];
 
 function isPublicIp(ip: string): boolean {
-  if (net.isIPv4(ip)) return isPublicIpv4(ip);
-  const lower = ip.toLowerCase();
-  if (lower.startsWith("::ffff:")) return isPublicIp(lower.slice(7));
-  if (lower === "::" || lower === "::1") return false;
-  if (/^fe[89ab]/.test(lower)) return false;
-  if (lower.startsWith("fc") || lower.startsWith("fd")) return false;
-  if (lower.startsWith("ff")) return false;
-  if (lower.startsWith("2001:db8")) return false;
-  return true;
+  try {
+    const addr = ipaddr.parse(ip);
+    if (addr.kind() === "ipv6" && addr.range() === "ipv4Mapped") {
+      return isPublicIp((addr as ipaddr.IPv6).toIPv4Address().toString());
+    }
+    const blocked = addr.kind() === "ipv4" ? BLOCKED_V4 : BLOCKED_V6;
+    return !blocked.some(([base, bits]) => addr.match(ipaddr.parse(base), bits));
+  } catch {
+    return false;
+  }
 }
 
 const connector = buildConnector({ timeout: TIMEOUT_MS });
@@ -49,12 +52,21 @@ const agent = new Agent({
   },
 });
 
+function isValidIp(value: string): boolean {
+  try {
+    ipaddr.parse(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function validateAndPin(
   opts: buildConnector.Options,
 ): Promise<buildConnector.Options> {
   const host = opts.hostname.trim().toLowerCase();
   let addrs: string[];
-  if (net.isIPv4(host) || net.isIPv6(host)) {
+  if (isValidIp(host)) {
     addrs = [host];
   } else {
     const resolved = await lookup(host, { all: true, verbatim: true });
@@ -84,7 +96,7 @@ async function readCapped(
   },
   cap: number,
 ): Promise<Buffer> {
-  if (!res.body) throw new BlockedHostError();
+  if (!res.body) return Buffer.alloc(0);
   const reader = res.body.getReader();
   const chunks: Buffer[] = [];
   let total = 0;
@@ -95,7 +107,7 @@ async function readCapped(
       total += value.byteLength;
       if (total > cap) {
         await reader.cancel();
-        throw new BlockedHostError();
+        throw new Error("Response too large");
       }
       chunks.push(Buffer.from(value));
     }

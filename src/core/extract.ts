@@ -51,19 +51,9 @@ export function toXhtmlFragment(html: string, baseUrl: string): string {
       }
     });
     document.querySelectorAll("*").forEach((el) => {
-      let names: string[] = [];
-      try {
-        names = Array.from(el.attributes ?? []).map((a) => a.name);
-      } catch {
-        return;
-      }
-      for (const name of names) {
-        if (name === "style" || name.startsWith("on")) {
-          try {
-            el.removeAttribute(name);
-          } catch {
-            /* ignore */
-          }
+      for (const attr of Array.from(el.attributes)) {
+        if (attr.name === "style" || attr.name.startsWith("on")) {
+          el.removeAttribute(attr.name);
         }
       }
     });
