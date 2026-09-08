@@ -56,3 +56,15 @@ button {
 button:disabled {
   opacity: 0.6;
 }
+
+footer {
+  max-width: 42rem;
+  margin: 3rem auto 0;
+  padding-bottom: 2rem;
+  font-size: 0.85rem;
+  color: rgba(127, 127, 127, 0.8);
+}
+
+footer a {
+  color: inherit;
+}

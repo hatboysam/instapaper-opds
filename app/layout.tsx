@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { GITHUB_ISSUES_URL } from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,7 +15,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <footer>
+          <a href={GITHUB_ISSUES_URL} target="_blank" rel="noopener noreferrer">
+            Feedback — report an issue on GitHub
+          </a>
+        </footer>
+      </body>
     </html>
   );
 }
