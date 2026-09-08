@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { GITHUB_ISSUES_URL } from "@/lib/site";
 import "./globals.css";
 
@@ -18,9 +19,13 @@ export default function RootLayout({
       <body>
         {children}
         <footer>
-          <a href={GITHUB_ISSUES_URL} target="_blank" rel="noopener noreferrer">
-            Feedback — report an issue on GitHub
-          </a>
+          <p>
+            <Link href="/signup">Sign up</Link> · <Link href="/signin">Sign in</Link> ·{" "}
+            <Link href="/profile">Manage account</Link> ·{" "}
+            <a href={GITHUB_ISSUES_URL} target="_blank" rel="noopener noreferrer">
+              Feedback
+            </a>
+          </p>
         </footer>
       </body>
     </html>

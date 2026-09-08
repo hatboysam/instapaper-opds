@@ -68,3 +68,7 @@ footer {
 footer a {
   color: inherit;
 }
+
+footer p {
+  margin: 0;
+}

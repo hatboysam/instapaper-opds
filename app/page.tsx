@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { OPDS_URL, SITE_URL } from "@/lib/site";
+import { OPDS_URL } from "@/lib/site";
 
 export default function Home() {
   return (
@@ -42,21 +42,15 @@ export default function Home() {
         <Link href="/signup">Sign up →</Link> · <Link href="/signin">Sign in →</Link> ·{" "}
         <Link href="/profile">Manage account →</Link>
       </p>
-      <p style={{ color: "rgba(127,127,127,0.8)" }}>{SITE_URL}</p>
       <h2>Support this project</h2>
-      <script
-        type="text/javascript"
-        src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js"
-        data-name="bmc-button"
-        data-slug="samstern"
-        data-color="#FFDD00"
-        data-emoji=""
-        data-font="Poppins"
-        data-text="Buy me a coffee"
-        data-outline-color="#000000"
-        data-font-color="#000000"
-        data-coffee-color="#ffffff"
-      ></script>
+      <a href="https://www.buymeacoffee.com/samstern" target="_blank" rel="noopener noreferrer">
+        <img
+          src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=samstern&button_colour=FFDD00&font_colour=000000&font_family=Poppins&outline_colour=000000&coffee_colour=ffffff"
+          alt="Buy me a coffee"
+          width={178}
+          height={40}
+        />
+      </a>
     </main>
   );
 }
