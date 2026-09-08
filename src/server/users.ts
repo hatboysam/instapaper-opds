@@ -130,3 +130,41 @@ export async function createUser(input: {
       createdAt: new Date().toISOString(),
     });
 }
+
+export interface ProfileInfo {
+  username: string;
+  instapaperUsername?: string;
+  createdAt?: string;
+}
+
+export async function getProfileInfo(username: string): Promise<ProfileInfo | null> {
+  const snap = await db().collection("users").doc(username).get();
+  if (!snap.exists) return null;
+  const data = snap.data() ?? {};
+  return {
+    username,
+    instapaperUsername: data.instapaperUsername as string | undefined,
+    createdAt: data.createdAt as string | undefined,
+  };
+}
+
+export async function updatePasswordHash(
+  username: string,
+  passwordHash: string,
+): Promise<void> {
+  await db().collection("users").doc(username).update({ passwordHash });
+}
+
+export async function updateInstapaperCredentials(
+  username: string,
+  creds: { token: string; tokenSecret: string; instapaperUsername: string },
+): Promise<void> {
+  await db()
+    .collection("users")
+    .doc(username)
+    .update({
+      tokenEnc: encrypt(creds.token),
+      tokenSecretEnc: encrypt(creds.tokenSecret),
+      instapaperUsername: creds.instapaperUsername,
+    });
+}

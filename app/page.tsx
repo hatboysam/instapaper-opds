@@ -1,11 +1,7 @@
-import { headers } from "next/headers";
 import Link from "next/link";
+import { OPDS_URL, SITE_URL } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
-
-export default async function Home() {
-  const host = (await headers()).get("host") ?? "localhost:3000";
-  const baseUrl = `https://${host}`;
+export default function Home() {
   return (
     <main>
       <h1>Instapaper → Xteink X4</h1>
@@ -19,7 +15,7 @@ export default async function Home() {
           On the device: <b>Settings → System → OPDS Servers → Add Server</b>
         </li>
         <li>
-          Server URL: <code>{baseUrl}/opds</code>
+          Server URL: <code>{OPDS_URL}</code>
         </li>
         <li>
           Username / password:{" "}
@@ -33,16 +29,18 @@ export default async function Home() {
       <h2>Routes</h2>
       <ul>
         <li>
-          Root catalog: <code>{baseUrl}/opds</code>
+          Root catalog: <code>{OPDS_URL}</code>
         </li>
         <li>
-          Folders: <code>/opds/unread</code>, <code>/opds/starred</code>,{" "}
-          <code>/opds/archive</code>
+          Folders: <code>{OPDS_URL}/unread</code>, <code>{OPDS_URL}/starred</code>,{" "}
+          <code>{OPDS_URL}/archive</code>
         </li>
       </ul>
       <p>
-        <Link href="/signup">Sign up →</Link>
+        <Link href="/signup">Sign up →</Link> · <Link href="/signin">Sign in →</Link> ·{" "}
+        <Link href="/profile">Manage account →</Link>
       </p>
+      <p style={{ color: "rgba(127,127,127,0.8)" }}>{SITE_URL}</p>
     </main>
   );
 }

@@ -48,7 +48,7 @@ export default function Signup() {
         </p>
         <ul>
           <li>
-            URL: <code>/opds</code> (same address as this site)
+            URL: <code>https://instaopds.com/opds</code>
           </li>
           <li>
             Username: <code>{form.username}</code>
@@ -56,6 +56,9 @@ export default function Signup() {
           <li>Password: the one you just chose</li>
         </ul>
         <p>Then open the catalog from the device home screen.</p>
+        <p>
+          <a href="/profile">Manage your account →</a>
+        </p>
       </main>
     );
   }

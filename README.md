@@ -12,6 +12,8 @@ Serves an Instapaper account as an **OPDS catalog**: your Xteink X4 (CrossPoint 
 
 Notes: articles are EPUB 3, images stripped (e-ink friendly). Re-downloading an article is always safe. If an article's full text can't be fetched, you get a stub EPUB with the original link.
 
+Manage your account (change app password, update Instapaper credentials) at `/signin` → `/profile`.
+
 ## Developing
 
 Requirements: Node 24 (`nvm install` picks it up via `.nvmrc`).
