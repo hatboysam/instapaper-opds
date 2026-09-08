@@ -50,6 +50,23 @@ export function toXhtmlFragment(html: string, baseUrl: string): string {
         unwrap(a);
       }
     });
+    document.querySelectorAll("*").forEach((el) => {
+      let names: string[] = [];
+      try {
+        names = Array.from(el.attributes ?? []).map((a) => a.name);
+      } catch {
+        return;
+      }
+      for (const name of names) {
+        if (name === "style" || name.startsWith("on")) {
+          try {
+            el.removeAttribute(name);
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+    });
     document.querySelectorAll("p, h1, h2, h3, h4, h5, h6, blockquote").forEach((el) => {
       if (!el.textContent?.trim()) el.remove();
     });

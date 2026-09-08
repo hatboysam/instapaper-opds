@@ -67,6 +67,7 @@ async function post(
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: new URLSearchParams(data).toString(),
+    signal: AbortSignal.timeout(10000),
   });
   return res;
 }

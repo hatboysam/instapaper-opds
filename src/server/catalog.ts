@@ -7,6 +7,9 @@ import {
 import { extractArticle, toXhtmlFragment } from "../core/extract";
 import { buildEpub } from "../core/epub";
 import { slugify } from "../core/slug";
+import { fetchArticleSafe } from "./safe-fetch";
+import { setTextBlocked } from "./users";
+import type { BasicUser } from "./auth";
 
 const BLOCK = 500;
 
@@ -83,24 +86,6 @@ function domainAuthor(url?: string): string | undefined {
   }
 }
 
-const BROWSER_UA =
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
-
-async function fetchOriginalArticle(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": BROWSER_UA, Accept: "text/html" },
-      redirect: "follow",
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!res.ok) return null;
-    const html = await res.text();
-    return html.trim().length > 500 ? html : null;
-  } catch {
-    return null;
-  }
-}
-
 function tryExtract(
   html: string,
   baseUrl?: string,
@@ -113,40 +98,45 @@ function tryExtract(
 }
 
 export async function buildBookEpub(
-  token: { key: string; secret: string },
+  user: BasicUser,
   bookmarkId: number,
   slugFromPath: string,
   opts: BookOptions,
 ): Promise<{ bytes: Uint8Array; filename: string }> {
+  const token = { key: user.token, secret: user.tokenSecret };
   let title = opts.title;
   let fragment = "";
   let byline: string | undefined;
   let failureReason: string | null = null;
 
-  const useExtracted = (
-    result: { fragment: string; title?: string; byline?: string } | null,
-  ): boolean => {
-    if (!result) return false;
-    fragment = result.fragment;
-    title = title || result.title;
-    byline = result.byline;
-    return true;
-  };
-
-  try {
-    const html = await getBookmarkText(token, bookmarkId);
-    if (!useExtracted(tryExtract(html, opts.url)) && opts.url) {
-      const fetched = await fetchOriginalArticle(opts.url);
-      if (fetched) useExtracted(tryExtract(fetched, opts.url));
-    }
-  } catch (err) {
-    if (!(err instanceof InstapaperError)) throw err;
-    failureReason = err.message;
-    if (opts.url) {
-      const fetched = await fetchOriginalArticle(opts.url);
-      if (fetched && useExtracted(tryExtract(fetched, opts.url))) {
-        failureReason = null;
+  if (!user.getTextBlocked) {
+    try {
+      const html = await getBookmarkText(token, bookmarkId);
+      const extracted = tryExtract(html, opts.url);
+      if (extracted) {
+        fragment = extracted.fragment;
+        title = title || extracted.title;
+        byline = extracted.byline;
       }
+    } catch (err) {
+      if (!(err instanceof InstapaperError)) throw err;
+      failureReason = err.message;
+      if (err.code === 1044) {
+        await setTextBlocked(user.username).catch(() => {});
+      }
+    }
+  } else {
+    failureReason = "Instapaper text unavailable for this account";
+  }
+
+  if (!fragment && opts.url) {
+    const fetched = await fetchArticleSafe(opts.url);
+    const extracted = fetched ? tryExtract(fetched.html, opts.url) : null;
+    if (extracted) {
+      fragment = extracted.fragment;
+      title = title || extracted.title;
+      byline = extracted.byline;
+      failureReason = null;
     }
   }
 

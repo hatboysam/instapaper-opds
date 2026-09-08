@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { handleRouteError, requireUser, unauthorized } from "@/server/auth";
 import { buildBookEpub } from "@/server/catalog";
 import { InstapaperError } from "@/server/instapaper";
+import { verifyBookParams } from "@/server/acquisition";
+import { clientIp, rateLimit, tooManyRequests } from "@/server/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -12,8 +14,11 @@ export async function GET(
   ctx: { params: Promise<{ file: string }> },
 ) {
   try {
+    if (!rateLimit(`opds:${clientIp(req)}`, 60, 60)) return tooManyRequests();
     const user = await requireUser(req);
     if (!user) return unauthorized();
+    if (!rateLimit(`dl:${user.username}`, 30, 0.5)) return tooManyRequests();
+
     const { file } = await ctx.params;
     const match = FILE_RE.exec(decodeURIComponent(file));
     if (!match) {
@@ -24,19 +29,17 @@ export async function GET(
       return new NextResponse("Invalid bookmark id", { status: 404 });
     }
     const params = req.nextUrl.searchParams;
-    const title = params.get("t") ?? undefined;
-    const url = params.get("u") ?? undefined;
-    const ts = Number.parseInt(params.get("ts") ?? "0", 10) || 0;
-    const { bytes, filename } = await buildBookEpub(
-      { key: user.token, secret: user.tokenSecret },
-      bookmarkId,
-      match[1],
-      {
-        title,
-        url,
-        timestamp: ts,
-      },
-    );
+    const title = params.get("t") ?? "";
+    const url = params.get("u") ?? "";
+    const ts = params.get("ts") ?? "";
+    if (!verifyBookParams({ id: bookmarkId, title, url, timestamp: ts }, params.get("s"))) {
+      return new NextResponse("Invalid book link — refresh the catalog", { status: 400 });
+    }
+    const { bytes, filename } = await buildBookEpub(user, bookmarkId, match[1], {
+      title: title || undefined,
+      url: url || undefined,
+      timestamp: Number.parseInt(ts, 10) || 0,
+    });
     return new NextResponse(new Uint8Array(bytes), {
       headers: {
         "Content-Type": "application/epub+zip",

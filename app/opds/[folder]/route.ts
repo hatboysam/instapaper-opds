@@ -4,6 +4,8 @@ import { slugify } from "@/core/slug";
 import { handleRouteError, requireUser, unauthorized } from "@/server/auth";
 import { fetchFolderPage, isFolder } from "@/server/catalog";
 import { InstapaperError } from "@/server/instapaper";
+import { bookParamsSignature } from "@/server/acquisition";
+import { clientIp, rateLimit, tooManyRequests } from "@/server/rate-limit";
 import { requestOrigin, requestUrl } from "@/server/request-origin";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +15,7 @@ export async function GET(
   ctx: { params: Promise<{ folder: string }> },
 ) {
   try {
+    if (!rateLimit(`opds:${clientIp(req)}`, 60, 60)) return tooManyRequests();
     const user = await requireUser(req);
     if (!user) return unauthorized();
     const { folder } = await ctx.params;
@@ -37,10 +40,18 @@ export async function GET(
       : undefined;
     const acqEntries: OpdsAcqEntry[] = entries.map((e) => {
       const slug = `${slugify(e.title, `article-${e.id}`)}-${e.id}`;
+      const timestamp = String(Math.floor(e.time.getTime() / 1000));
+      const signature = bookParamsSignature({
+        id: e.id,
+        title: e.title,
+        url: e.url,
+        timestamp,
+      });
       const qs = new URLSearchParams();
       qs.set("t", e.title);
       if (e.url) qs.set("u", e.url);
-      qs.set("ts", String(Math.floor(e.time.getTime() / 1000)));
+      qs.set("ts", timestamp);
+      qs.set("s", signature);
       return {
         id: `urn:instapaper:bookmark:${e.id}`,
         title: e.title,

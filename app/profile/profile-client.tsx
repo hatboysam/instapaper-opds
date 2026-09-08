@@ -24,14 +24,19 @@ export default function ProfileClient({ username }: { username: string }) {
   const [ipMsg, setIpMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
-    fetch("/api/profile")
-      .then(async (res) => {
-        const data = (await res.json()) as Profile & { error?: string };
-        if (!res.ok) throw new Error(data.error ?? "Failed to load profile");
-        setProfile(data);
-        setIpUser(data.instapaperUsername ?? "");
-      })
-      .catch((e: Error) => setError(e.message));
+    fetch("/api/profile").then(async (res) => {
+      if (res.status === 401) {
+        window.location.href = "/signin";
+        return;
+      }
+      const data = (await res.json()) as Profile & { error?: string };
+      if (!res.ok) {
+        setError(data.error ?? "Failed to load profile");
+        return;
+      }
+      setProfile(data);
+      setIpUser(data.instapaperUsername ?? "");
+    });
   }, []);
 
   const changePassword = async (e: React.FormEvent) => {

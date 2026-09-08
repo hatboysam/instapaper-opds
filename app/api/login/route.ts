@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUser, verifyPassword, ConfigError } from "@/server/users";
-import { InstapaperError } from "@/server/instapaper";
 import {
   SESSION_COOKIE,
   createSessionToken,
   sessionCookieOptions,
 } from "@/server/session";
+import { clientIp, rateLimit, tooManyRequests } from "@/server/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
+    if (!rateLimit(`login:${clientIp(req)}`, 10, 10)) return tooManyRequests();
     const body = (await req.json()) as Record<string, unknown>;
     const username = String(body.username ?? "").trim().toLowerCase();
     const password = String(body.password ?? "");
@@ -24,16 +25,13 @@ export async function POST(req: NextRequest) {
     const res = NextResponse.json({ ok: true, username: record.username });
     res.cookies.set(
       SESSION_COOKIE,
-      createSessionToken(record.username),
+      createSessionToken(record.username, record.sessionVersion),
       sessionCookieOptions(),
     );
     return res;
   } catch (err) {
     if (err instanceof ConfigError) {
       return NextResponse.json({ error: err.message }, { status: 503 });
-    }
-    if (err instanceof InstapaperError) {
-      return NextResponse.json({ error: err.message }, { status: 502 });
     }
     console.error(err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

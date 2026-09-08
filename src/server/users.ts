@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { getApps, initializeApp } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
 
 export interface UserRecord {
   username: string;
@@ -8,6 +8,9 @@ export interface UserRecord {
   token: string;
   tokenSecret: string;
   instapaperUsername?: string;
+  instapaperUserId?: number;
+  getTextBlocked: boolean;
+  sessionVersion: number;
   createdAt: string;
 }
 
@@ -87,13 +90,13 @@ function verifyPassword(password: string, stored: string): boolean {
   return crypto.timingSafeEqual(expected, actual);
 }
 
+export { hashPassword, verifyPassword };
+
 const USERNAME_RE = /^[a-z0-9][a-z0-9_-]{2,31}$/;
 
 export function isValidUsername(username: string): boolean {
   return USERNAME_RE.test(username);
 }
-
-export { hashPassword, verifyPassword };
 
 function toRecord(username: string, doc: Record<string, unknown>): UserRecord {
   return {
@@ -102,6 +105,10 @@ function toRecord(username: string, doc: Record<string, unknown>): UserRecord {
     token: decrypt(doc.tokenEnc as string),
     tokenSecret: decrypt(doc.tokenSecretEnc as string),
     instapaperUsername: doc.instapaperUsername as string | undefined,
+    instapaperUserId:
+      typeof doc.instapaperUserId === "number" ? doc.instapaperUserId : undefined,
+    getTextBlocked: doc.getTextBlocked === true,
+    sessionVersion: typeof doc.sessionVersion === "number" ? doc.sessionVersion : 0,
     createdAt: doc.createdAt as string,
   };
 }
@@ -112,12 +119,24 @@ export async function getUser(username: string): Promise<UserRecord | null> {
   return toRecord(username, snap.data() ?? {});
 }
 
+export async function findUsernameByInstapaperUserId(
+  userId: number,
+): Promise<string | null> {
+  const snap = await db()
+    .collection("users")
+    .where("instapaperUserId", "==", userId)
+    .limit(1)
+    .get();
+  return snap.empty ? null : snap.docs[0].id;
+}
+
 export async function createUser(input: {
   username: string;
   password: string;
   token: string;
   tokenSecret: string;
   instapaperUsername: string;
+  instapaperUserId?: number;
 }): Promise<void> {
   await db()
     .collection("users")
@@ -127,37 +146,34 @@ export async function createUser(input: {
       tokenEnc: encrypt(input.token),
       tokenSecretEnc: encrypt(input.tokenSecret),
       instapaperUsername: input.instapaperUsername,
+      instapaperUserId: input.instapaperUserId ?? null,
+      getTextBlocked: false,
+      sessionVersion: 0,
       createdAt: new Date().toISOString(),
     });
-}
-
-export interface ProfileInfo {
-  username: string;
-  instapaperUsername?: string;
-  createdAt?: string;
-}
-
-export async function getProfileInfo(username: string): Promise<ProfileInfo | null> {
-  const snap = await db().collection("users").doc(username).get();
-  if (!snap.exists) return null;
-  const data = snap.data() ?? {};
-  return {
-    username,
-    instapaperUsername: data.instapaperUsername as string | undefined,
-    createdAt: data.createdAt as string | undefined,
-  };
 }
 
 export async function updatePasswordHash(
   username: string,
   passwordHash: string,
 ): Promise<void> {
-  await db().collection("users").doc(username).update({ passwordHash });
+  await db()
+    .collection("users")
+    .doc(username)
+    .update({
+      passwordHash,
+      sessionVersion: FieldValue.increment(1),
+    });
 }
 
 export async function updateInstapaperCredentials(
   username: string,
-  creds: { token: string; tokenSecret: string; instapaperUsername: string },
+  creds: {
+    token: string;
+    tokenSecret: string;
+    instapaperUsername: string;
+    instapaperUserId?: number;
+  },
 ): Promise<void> {
   await db()
     .collection("users")
@@ -166,5 +182,12 @@ export async function updateInstapaperCredentials(
       tokenEnc: encrypt(creds.token),
       tokenSecretEnc: encrypt(creds.tokenSecret),
       instapaperUsername: creds.instapaperUsername,
+      ...(creds.instapaperUserId !== undefined
+        ? { instapaperUserId: creds.instapaperUserId }
+        : {}),
     });
+}
+
+export async function setTextBlocked(username: string): Promise<void> {
+  await db().collection("users").doc(username).update({ getTextBlocked: true });
 }

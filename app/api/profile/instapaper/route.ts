@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateInstapaperCredentials, ConfigError } from "@/server/users";
+import {
+  updateInstapaperCredentials,
+  findUsernameByInstapaperUserId,
+  ConfigError,
+} from "@/server/users";
 import { exchangeXAuthToken, InstapaperError } from "@/server/instapaper";
-import { usernameFromRequest } from "@/server/session";
+import { requireWebUser, handleRouteError } from "@/server/auth";
+import { clientIp, rateLimit, tooManyRequests } from "@/server/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    const username = usernameFromRequest(req);
-    if (!username) {
+    if (!rateLimit(`ipx:${clientIp(req)}`, 5, 1)) return tooManyRequests();
+    const record = await requireWebUser(req);
+    if (!record) {
       return NextResponse.json({ error: "Not signed in" }, { status: 401 });
     }
     const body = (await req.json()) as Record<string, unknown>;
@@ -20,14 +26,24 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-    const { token, tokenSecret } = await exchangeXAuthToken(
+    const { token, tokenSecret, userId } = await exchangeXAuthToken(
       instapaperUsername,
       instapaperPassword,
     );
-    await updateInstapaperCredentials(username, {
+    if (userId !== undefined) {
+      const existing = await findUsernameByInstapaperUserId(userId);
+      if (existing && existing !== record.username) {
+        return NextResponse.json(
+          { error: "That Instapaper account is already registered" },
+          { status: 409 },
+        );
+      }
+    }
+    await updateInstapaperCredentials(record.username, {
       token,
       tokenSecret,
       instapaperUsername,
+      instapaperUserId: userId,
     });
     return NextResponse.json({ ok: true });
   } catch (err) {

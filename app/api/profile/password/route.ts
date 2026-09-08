@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  getUser,
   verifyPassword,
   hashPassword,
   updatePasswordHash,
   ConfigError,
 } from "@/server/users";
-import { usernameFromRequest } from "@/server/session";
+import { requireWebUser, handleRouteError, invalidateAuthCache } from "@/server/auth";
+import { clientIp, rateLimit, tooManyRequests } from "@/server/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    const username = usernameFromRequest(req);
-    if (!username) {
+    if (!rateLimit(`pw:${clientIp(req)}`, 5, 1)) return tooManyRequests();
+    const record = await requireWebUser(req);
+    if (!record) {
       return NextResponse.json({ error: "Not signed in" }, { status: 401 });
     }
     const body = (await req.json()) as Record<string, unknown>;
@@ -25,14 +26,11 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-    const record = await getUser(username);
-    if (!record) {
-      return NextResponse.json({ error: "Account not found" }, { status: 404 });
-    }
     if (!verifyPassword(currentPassword, record.passwordHash)) {
       return NextResponse.json({ error: "Current password is incorrect" }, { status: 403 });
     }
-    await updatePasswordHash(username, hashPassword(newPassword));
+    await updatePasswordHash(record.username, hashPassword(newPassword));
+    invalidateAuthCache(record.username);
     return NextResponse.json({ ok: true });
   } catch (err) {
     if (err instanceof ConfigError) {

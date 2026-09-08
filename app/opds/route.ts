@@ -1,12 +1,14 @@
 import { NextRequest } from "next/server";
 import { navigationFeed } from "@/core/opds";
 import { handleRouteError, requireUser, unauthorized } from "@/server/auth";
+import { clientIp, rateLimit, tooManyRequests } from "@/server/rate-limit";
 import { requestOrigin } from "@/server/request-origin";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
+    if (!rateLimit(`opds:${clientIp(req)}`, 60, 60)) return tooManyRequests();
     const user = await requireUser(req);
     if (!user) return unauthorized();
     const origin = requestOrigin(req);
