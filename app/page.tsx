@@ -41,6 +41,20 @@ export default function Home() {
         <Link href="/profile">Manage account →</Link>
       </p>
       <p style={{ color: "rgba(127,127,127,0.8)" }}>{SITE_URL}</p>
+      <h2>Support this project</h2>
+      <script
+        type="text/javascript"
+        src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js"
+        data-name="bmc-button"
+        data-slug="samstern"
+        data-color="#FFDD00"
+        data-emoji=""
+        data-font="Poppins"
+        data-text="Buy me a coffee"
+        data-outline-color="#000000"
+        data-font-color="#000000"
+        data-coffee-color="#ffffff"
+      ></script>
     </main>
   );
 }
