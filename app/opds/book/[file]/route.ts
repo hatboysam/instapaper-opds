@@ -40,6 +40,7 @@ export async function GET(
     return new NextResponse(new Uint8Array(bytes), {
       headers: {
         "Content-Type": "application/epub+zip",
+        "Content-Length": String(bytes.length),
         "Content-Disposition": `inline; filename="${filename}"`,
         "Cache-Control": "private, no-store",
       },

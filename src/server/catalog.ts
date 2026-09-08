@@ -8,7 +8,7 @@ import { extractArticle, toXhtmlFragment } from "../core/extract";
 import { buildEpub } from "../core/epub";
 import { slugify } from "../core/slug";
 import { fetchArticleSafe } from "./safe-fetch";
-import { setTextBlocked } from "./users";
+import { setTextBlocked, clearTextBlocked } from "./users";
 import type { BasicUser } from "./auth";
 
 const BLOCK = 500;
@@ -60,7 +60,7 @@ export async function fetchFolderPage(
     have = all.map((b) => String(b.bookmark_id));
   }
   const slice = all.slice((page - 1) * size, page * size);
-  return { entries: slice.map(toEntry), hasMore: slice.length === size };
+  return { entries: slice.map(toEntry), hasMore: all.length > page * size };
 }
 
 export interface BookOptions {
@@ -109,24 +109,23 @@ export async function buildBookEpub(
   let byline: string | undefined;
   let failureReason: string | null = null;
 
-  if (!user.getTextBlocked) {
-    try {
-      const html = await getBookmarkText(token, bookmarkId);
-      const extracted = tryExtract(html, opts.url);
-      if (extracted) {
-        fragment = extracted.fragment;
-        title = title || extracted.title;
-        byline = extracted.byline;
-      }
-    } catch (err) {
-      if (!(err instanceof InstapaperError)) throw err;
-      failureReason = err.message;
-      if (err.code === 1044) {
-        await setTextBlocked(user.username).catch(() => {});
-      }
+  // Always attempt get_text: the flag only records the last outcome so a
+  // transient 1044 doesn't permanently degrade the account.
+  try {
+    const html = await getBookmarkText(token, bookmarkId);
+    const extracted = tryExtract(html, opts.url);
+    if (extracted) {
+      fragment = extracted.fragment;
+      title = title || extracted.title;
+      byline = extracted.byline;
     }
-  } else {
-    failureReason = "Instapaper text unavailable for this account";
+    if (user.getTextBlocked) await clearTextBlocked(user.username).catch(() => {});
+  } catch (err) {
+    if (!(err instanceof InstapaperError)) throw err;
+    failureReason = err.message;
+    if (err.code === 1044) {
+      await setTextBlocked(user.username).catch(() => {});
+    }
   }
 
   if (!fragment && opts.url) {

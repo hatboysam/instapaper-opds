@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-    if (!verifyPassword(currentPassword, record.passwordHash)) {
+    if (!(await verifyPassword(currentPassword, record.passwordHash))) {
       return NextResponse.json({ error: "Current password is incorrect" }, { status: 403 });
     }
     await updatePasswordHash(record.username, hashPassword(newPassword));

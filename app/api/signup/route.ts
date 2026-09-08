@@ -6,11 +6,15 @@ import {
   ConfigError,
 } from "@/server/users";
 import { exchangeXAuthToken, InstapaperError } from "@/server/instapaper";
+import { checkRateLimit, clientIp } from "@/server/throttle";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
+    if (!checkRateLimit(`signup:${clientIp(req)}`, 10, 60 * 60 * 1000)) {
+      return NextResponse.json({ error: "Too many signups — try again later" }, { status: 429 });
+    }
     const body = (await req.json()) as Record<string, unknown>;
     const username = String(body.username ?? "").trim().toLowerCase();
     const password = String(body.password ?? "");
@@ -68,7 +72,7 @@ export async function POST(req: NextRequest) {
     if (err instanceof ConfigError) {
       return NextResponse.json({ error: err.message }, { status: 503 });
     }
-    if (err instanceof Error && /ALREADY_EXISTS|already exists/i.test(err.message)) {
+    if (err instanceof Error && ((err as { code?: number }).code === 6 || /ALREADY_EXISTS|already exists/i.test(err.message))) {
       return NextResponse.json(
         { error: "That username is already taken" },
         { status: 409 },

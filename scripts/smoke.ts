@@ -45,6 +45,17 @@ async function main() {
   if (!/<br\/>/.test(fragment)) throw new Error("void elements not xhtml-serialized");
   if (!/&amp;/.test(fragment)) throw new Error("entity escaping lost");
 
+  const dirty =
+    `<base href="http://evil.example/">` +
+    `<p background="http://evil.example/bg.png">x</p>` +
+    `<svg onload="alert(1)"><script>alert(2)</script></svg>` +
+    `<table><tr><td colspan="2" onclick="alert(3)">c</td></tr></table>`;
+  const clean = toXhtmlFragment(dirty, "https://example.com/");
+  if (/<base|background=|\bonload|<script|evil\.example/i.test(clean)) {
+    throw new Error(`sanitizer allowlist failed: ${clean}`);
+  }
+  if (!clean.includes('colspan="2"')) throw new Error("allowlist stripped legit attrs");
+
   const slug = slugify("Hello, World! A Long Title — With Stuff", "article-1");
   if (slug !== "hello-world-a-long-title-with-stuff") {
     throw new Error(`slugify produced: ${slug}`);

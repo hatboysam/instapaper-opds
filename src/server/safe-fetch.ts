@@ -117,6 +117,15 @@ async function readCapped(
 
 const REDIRECT_STATUSES = [301, 302, 303, 307, 308];
 
+function isAllowedUrl(url: URL): boolean {
+  if (url.protocol !== "https:" && url.protocol !== "http:") return false;
+  // Pin to web ports only — no reaching internal services on odd ports.
+  if (url.port !== "" && url.port !== "80" && url.port !== "443") return false;
+  return true;
+}
+
+const BLOCKED_CONTENT_TYPES = /^(image|audio|video)\/|application\/(pdf|octet-stream|zip|epub\+zip)/i;
+
 export async function fetchArticleSafe(
   rawUrl: string,
 ): Promise<{ html: string } | null> {
@@ -126,7 +135,7 @@ export async function fetchArticleSafe(
   } catch {
     return null;
   }
-  if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+  if (!isAllowedUrl(url)) return null;
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     let res: Awaited<ReturnType<typeof undiciFetch>>;
@@ -149,7 +158,7 @@ export async function fetchArticleSafe(
       if (!location) return null;
       try {
         const next = new URL(location, url);
-        if (next.protocol !== "https:" && next.protocol !== "http:") return null;
+        if (!isAllowedUrl(next)) return null;
         url = next;
       } catch {
         return null;
@@ -157,6 +166,9 @@ export async function fetchArticleSafe(
       continue;
     }
     if (!res.ok || !res.body) return null;
+    // Fail open to the capped reader below on missing/garbled headers.
+    if (Number(res.headers.get("content-length")) > MAX_BYTES) return null;
+    if (BLOCKED_CONTENT_TYPES.test(res.headers.get("content-type") ?? "")) return null;
     try {
       const html = (await readCapped(res, MAX_BYTES)).toString("utf8");      return html.trim().length > 500 ? { html } : null;
     } catch {

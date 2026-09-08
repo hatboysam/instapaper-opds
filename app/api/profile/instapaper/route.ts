@@ -5,7 +5,7 @@ import {
   ConfigError,
 } from "@/server/users";
 import { exchangeXAuthToken, InstapaperError } from "@/server/instapaper";
-import { requireWebUser, handleRouteError } from "@/server/auth";
+import { requireWebUser, handleRouteError, invalidateAuthCache } from "@/server/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
       instapaperUsername,
       instapaperUserId: userId,
     });
+    invalidateAuthCache(record.username);
     return NextResponse.json({ ok: true });
   } catch (err) {
     if (err instanceof InstapaperError) {

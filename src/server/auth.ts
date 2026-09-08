@@ -1,7 +1,8 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { getUser, verifyPassword, UserRecord, ConfigError } from "./users";
+import { getUser, scryptAsync, verifyPassword, UserRecord, ConfigError } from "./users";
 import { SESSION_COOKIE, parseSessionToken } from "./session";
+import { clientIp, isAuthThrottled, recordAuthFailure } from "./throttle";
 
 export interface BasicUser {
   username: string;
@@ -53,6 +54,9 @@ export async function requireUser(req: NextRequest): Promise<BasicUser | null> {
   }
   if (!AUTH_USERNAME_RE.test(username)) return null;
 
+  const ip = clientIp(req);
+  if (isAuthThrottled(ip)) return null;
+
   const passwordHash = crypto.createHash("sha256").update(password).digest("hex");
   const cacheKey = `${username}:${passwordHash}`;
   const hit = authCache.get(cacheKey);
@@ -60,10 +64,11 @@ export async function requireUser(req: NextRequest): Promise<BasicUser | null> {
 
   let user: BasicUser | null = null;
   const record = await getUser(username);
-  if (record && verifyPassword(password, record.passwordHash)) {
+  if (record && (await verifyPassword(password, record.passwordHash))) {
     user = toBasicUser(record);
   } else {
-    crypto.scryptSync(password, DUMMY_SALT, 64);
+    await scryptAsync(password, DUMMY_SALT, 64);
+    recordAuthFailure(ip);
   }
 
   if (user) {

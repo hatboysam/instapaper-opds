@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { promisify } from "node:util";
 import { getApps, initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 
@@ -82,12 +83,18 @@ function hashPassword(password: string): string {
   return `${salt.toString("hex")}:${hash.toString("hex")}`;
 }
 
-function verifyPassword(password: string, stored: string): boolean {
+export const scryptAsync = promisify(crypto.scrypt);
+
+async function verifyPassword(password: string, stored: string): Promise<boolean> {
   const [saltHex, hashHex] = stored.split(":");
   if (!saltHex || !hashHex) return false;
   const expected = Buffer.from(hashHex, "hex");
-  const actual = crypto.scryptSync(password, Buffer.from(saltHex, "hex"), expected.length);
-  return crypto.timingSafeEqual(expected, actual);
+  const actual = (await scryptAsync(
+    password,
+    Buffer.from(saltHex, "hex"),
+    expected.length,
+  )) as Buffer;
+  return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
 }
 
 export { hashPassword, verifyPassword };
@@ -99,11 +106,28 @@ export function isValidUsername(username: string): boolean {
 }
 
 function toRecord(username: string, doc: Record<string, unknown>): UserRecord {
+  if (
+    typeof doc.passwordHash !== "string" ||
+    typeof doc.tokenEnc !== "string" ||
+    typeof doc.tokenSecretEnc !== "string"
+  ) {
+    throw new Error(`User record for "${username}" is incomplete`);
+  }
+  let token: string;
+  let tokenSecret: string;
+  try {
+    token = decrypt(doc.tokenEnc);
+    tokenSecret = decrypt(doc.tokenSecretEnc);
+  } catch {
+    throw new Error(
+      `User record for "${username}" could not be decrypted (was the encryption key rotated?)`,
+    );
+  }
   return {
     username,
-    passwordHash: doc.passwordHash as string,
-    token: decrypt(doc.tokenEnc as string),
-    tokenSecret: decrypt(doc.tokenSecretEnc as string),
+    passwordHash: doc.passwordHash,
+    token,
+    tokenSecret,
     instapaperUsername: doc.instapaperUsername as string | undefined,
     instapaperUserId:
       typeof doc.instapaperUserId === "number" ? doc.instapaperUserId : undefined,
@@ -190,4 +214,15 @@ export async function updateInstapaperCredentials(
 
 export async function setTextBlocked(username: string): Promise<void> {
   await db().collection("users").doc(username).update({ getTextBlocked: true });
+}
+
+export async function clearTextBlocked(username: string): Promise<void> {
+  await db().collection("users").doc(username).update({ getTextBlocked: false });
+}
+
+export async function incrementSessionVersion(username: string): Promise<void> {
+  await db()
+    .collection("users")
+    .doc(username)
+    .update({ sessionVersion: FieldValue.increment(1) });
 }
