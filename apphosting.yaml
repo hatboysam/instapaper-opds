@@ -12,5 +12,3 @@ env:
     secret: instapaper-consumer-secret
   - variable: TOKEN_ENCRYPTION_KEY
     secret: token-encryption-key
-  - variable: SIGNUP_CODE
-    secret: signup-code

@@ -11,7 +11,6 @@ export async function POST(req: NextRequest) {
     const password = String(body.password ?? "");
     const instapaperUsername = String(body.instapaperUsername ?? "").trim();
     const instapaperPassword = String(body.instapaperPassword ?? "");
-    const inviteCode = String(body.inviteCode ?? "");
 
     if (!isValidUsername(username)) {
       return NextResponse.json(
@@ -31,11 +30,6 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-    const expectedCode = process.env.SIGNUP_CODE;
-    if (expectedCode && inviteCode !== expectedCode) {
-      return NextResponse.json({ error: "Invalid invite code" }, { status: 403 });
-    }
-
     const { token, tokenSecret } = await exchangeXAuthToken(
       instapaperUsername,
       instapaperPassword,

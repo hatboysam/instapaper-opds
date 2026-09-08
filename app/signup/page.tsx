@@ -8,7 +8,6 @@ export default function Signup() {
     password: "",
     instapaperUsername: "",
     instapaperPassword: "",
-    inviteCode: "",
   });
   const [status, setStatus] = useState<"idle" | "loading" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -81,11 +80,6 @@ export default function Signup() {
           Password (8+ chars)
           <br />
           <input type="password" value={form.password} onChange={set("password")} autoComplete="new-password" />
-        </label>
-        <label>
-          Invite code (if asked for one)
-          <br />
-          <input value={form.inviteCode} onChange={set("inviteCode")} autoComplete="off" />
         </label>
         <label>
           Instapaper email

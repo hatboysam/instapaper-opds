@@ -4,7 +4,7 @@ Serves an Instapaper account as an **OPDS catalog**: any OPDS-compatible reader 
 
 ## Using it
 
-1. **Create an account** at `/signup` — pick any username + password, enter the invite code, and your Instapaper email/password (used once to obtain an API token; not stored).
+1. **Create an account** at `/signup` — pick any username + password, and enter your Instapaper email/password (used once to obtain an API token; not stored).
 2. **On your reader:** `Settings → System → OPDS Servers → Add Server` (CrossPoint)
    - URL: `https://instaopds.com/opds` (or `https://instapaper-opds--instapaper-opds.us-central1.hosted.app/opds`)
    - Username / password: the account from step 1
@@ -32,7 +32,7 @@ Local testing without Firebase works while `FIREBASE_PROJECT_ID` is empty: set `
 
 Deployed on Firebase App Hosting, project `instapaper-opds`. Pushes to `main` trigger a build.
 
-Secrets live in Secret Manager (`firebase apphosting:secrets:set`), referenced from `apphosting.yaml`: `instapaper-consumer-key`, `instapaper-consumer-secret`, `token-encryption-key`, `signup-code`.
+Secrets live in Secret Manager (`firebase apphosting:secrets:set`), referenced from `apphosting.yaml`: `instapaper-consumer-key`, `instapaper-consumer-secret`, `token-encryption-key`.
 
 Per-user Instapaper tokens are stored encrypted (AES-256-GCM) in Firestore, collection `users` — that's the only database.
 
