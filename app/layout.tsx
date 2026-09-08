@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Instapaper → Xteink X4",
-  description: "OPDS catalog for reading Instapaper articles on an Xteink X4",
+  title: "Instapaper → OPDS",
+  description:
+    "OPDS catalog for reading Instapaper articles on any OPDS-compatible e-reader (CrossPoint firmware on Xteink X3/X4/X4 Pro and others)",
 };
 
 export default function RootLayout({

@@ -1,6 +1,6 @@
 # instapaper-opds
 
-Instapaper → OPDS server for the Xteink X4 (CrossPoint firmware). Deployed on Firebase App Hosting, project `instapaper-opds`; pushes to `main` trigger builds.
+Instapaper → OPDS server for OPDS-compatible e-readers (built for CrossPoint firmware on Xteink X3/X4/X4 Pro). Deployed on Firebase App Hosting, project `instapaper-opds`; pushes to `main` trigger builds.
 
 ## Rules
 

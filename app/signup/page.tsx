@@ -44,7 +44,8 @@ export default function Signup() {
       <main>
         <h1>Account created</h1>
         <p>
-          On your X4: <b>Settings → System → OPDS Servers → Add Server</b>
+          On your reader (CrossPoint: <b>Settings → System → OPDS Servers → Add
+          Server</b>)
         </p>
         <ul>
           <li>

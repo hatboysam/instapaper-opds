@@ -1,18 +1,18 @@
 # instapaper-opds
 
-Serves an Instapaper account as an **OPDS catalog**: your Xteink X4 (CrossPoint firmware) browses Unread / Starred / Archive and downloads articles as EPUBs directly over WiFi. No phone or cable involved.
+Serves an Instapaper account as an **OPDS catalog**: any OPDS-compatible reader browses Unread / Starred / Archive and downloads articles as EPUBs directly over WiFi. Built for CrossPoint firmware readers (Xteink X3/X4/X4 Pro) — works with anything that speaks OPDS. No phone or cable involved.
 
 ## Using it
 
 1. **Create an account** at `/signup` — pick any username + password, enter the invite code, and your Instapaper email/password (used once to obtain an API token; not stored).
-2. **On the X4:** `Settings → System → OPDS Servers → Add Server`
+2. **On your reader:** `Settings → System → OPDS Servers → Add Server` (CrossPoint)
    - URL: `https://instaopds.com/opds` (or `https://instapaper-opds--instapaper-opds.us-central1.hosted.app/opds`)
    - Username / password: the account from step 1
 3. **Open the catalog** from the device home screen. Articles are newest-first; download any and it appears in the book picker.
 
 Notes: articles are EPUB 3, images stripped (e-ink friendly). Re-downloading an article is always safe. If an article's full text can't be fetched, you get a stub EPUB with the original link.
 
-Manage your account (change app password, update Instapaper credentials) at `/signin` → `/profile`.
+Manage your account (change app password, update Instapaper credentials) at `/signin` → `/profile`. Your reader stores these credentials in its OPDS server entry — update it after any password change.
 
 ## Developing
 

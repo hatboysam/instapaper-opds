@@ -44,7 +44,7 @@ export default function ProfileClient({ username }: { username: string }) {
     });
     const data = (await res.json()) as { ok?: boolean; error?: string };
     if (res.ok && data.ok) {
-      setPwMsg({ ok: true, text: "Password updated. Update your X4's OPDS server entry too." });
+      setPwMsg({ ok: true, text: "Password updated. Update your reader's OPDS server entry too." });
       setPwCurrent("");
       setPwNew("");
     } else {
@@ -89,16 +89,16 @@ export default function ProfileClient({ username }: { username: string }) {
       <h1>Account: {username}</h1>
       {profile && (
         <>
-          <h2>Device setup</h2>
-          <ul>
-            <li>
-              OPDS URL: <code>{profile.opdsUrl}</code>
-            </li>
-            <li>
-              Username: <code>{profile.username}</code>
-            </li>
-            <li>Password: your app password (change it below; update the X4 after)</li>
-          </ul>
+      <h2>Reader setup</h2>
+      <ul>
+        <li>
+          OPDS URL: <code>{profile.opdsUrl}</code>
+        </li>
+        <li>
+          Username: <code>{profile.username}</code>
+        </li>
+        <li>Password: your app password (change it below; update your reader after)</li>
+      </ul>
           <p>
             Instapaper account: <code>{profile.instapaperUsername ?? "unknown"}</code>
             {profile.createdAt ? ` (member since ${profile.createdAt.slice(0, 10)})` : ""}

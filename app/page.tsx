@@ -4,15 +4,17 @@ import { OPDS_URL, SITE_URL } from "@/lib/site";
 export default function Home() {
   return (
     <main>
-      <h1>Instapaper → Xteink X4</h1>
+      <h1>Instapaper → your e-reader</h1>
       <p>
-        Your Instapaper account, served as an OPDS catalog. Point your X4 at it
-        and download articles straight to the reader.
+        Your Instapaper account, served as an OPDS catalog. Works with any
+        reader that supports OPDS — including CrossPoint firmware on the Xteink
+        X3, X4, and X4 Pro.
       </p>
-      <h2>Set up your X4 (once)</h2>
+      <h2>Set up your reader (once)</h2>
       <ol>
         <li>
-          On the device: <b>Settings → System → OPDS Servers → Add Server</b>
+          On CrossPoint: <b>Settings → System → OPDS Servers → Add Server</b>{" "}
+          (on other readers, open your OPDS client's server settings)
         </li>
         <li>
           Server URL: <code>{OPDS_URL}</code>
@@ -22,7 +24,7 @@ export default function Home() {
           <Link href="/signup">create an account</Link> (or use the one you made)
         </li>
         <li>
-          Open the catalog from the home screen, browse, download. Newest
+          Open the catalog from your home screen, browse, download. Newest
           articles are first.
         </li>
       </ol>
