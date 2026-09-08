@@ -5,7 +5,6 @@ import { handleRouteError, requireUser, unauthorized } from "@/server/auth";
 import { fetchFolderPage, isFolder } from "@/server/catalog";
 import { InstapaperError } from "@/server/instapaper";
 import { bookParamsSignature } from "@/server/acquisition";
-import { clientIp, rateLimit, tooManyRequests } from "@/server/rate-limit";
 import { requestOrigin, requestUrl } from "@/server/request-origin";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +14,6 @@ export async function GET(
   ctx: { params: Promise<{ folder: string }> },
 ) {
   try {
-    if (!rateLimit(`opds:${clientIp(req)}`, 60, 60)) return tooManyRequests();
     const user = await requireUser(req);
     if (!user) return unauthorized();
     const { folder } = await ctx.params;

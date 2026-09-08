@@ -3,7 +3,6 @@ import { handleRouteError, requireUser, unauthorized } from "@/server/auth";
 import { buildBookEpub } from "@/server/catalog";
 import { InstapaperError } from "@/server/instapaper";
 import { verifyBookParams } from "@/server/acquisition";
-import { clientIp, rateLimit, tooManyRequests } from "@/server/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -14,10 +13,8 @@ export async function GET(
   ctx: { params: Promise<{ file: string }> },
 ) {
   try {
-    if (!rateLimit(`opds:${clientIp(req)}`, 60, 60)) return tooManyRequests();
     const user = await requireUser(req);
     if (!user) return unauthorized();
-    if (!rateLimit(`dl:${user.username}`, 30, 0.5)) return tooManyRequests();
 
     const { file } = await ctx.params;
     const match = FILE_RE.exec(decodeURIComponent(file));

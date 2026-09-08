@@ -6,13 +6,11 @@ import {
   ConfigError,
 } from "@/server/users";
 import { requireWebUser, handleRouteError, invalidateAuthCache } from "@/server/auth";
-import { clientIp, rateLimit, tooManyRequests } from "@/server/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    if (!rateLimit(`pw:${clientIp(req)}`, 5, 1)) return tooManyRequests();
     const record = await requireWebUser(req);
     if (!record) {
       return NextResponse.json({ error: "Not signed in" }, { status: 401 });
